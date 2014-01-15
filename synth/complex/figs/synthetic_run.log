@@ -1,0 +1,74 @@
+LAPTOP
+
+Fatiando a Terra:
+  version: 0.0.1
+  date: Wed Jul 13 15:14:07 2011
+  version control info:
+    changeset:   178:8b23076ba83e
+    tag:         tip
+    user:        Leonardo Uieda <leouieda@gmail.com>
+    date:        Fri Jun 24 20:19:30 2011 -0300
+
+Contaminating with 5 Eotvos noise
+Generating synthetic gyy data:
+  grid type: regular
+  data points = 2601
+Saving gravity field data to file 'gyy_data.txt'
+Generating synthetic gyz data:
+  grid type: regular
+  data points = 2601
+Saving gravity field data to file 'gyz_data.txt'
+Generating synthetic gzz data:
+  grid type: regular
+  data points = 2601
+Saving gravity field data to file 'gzz_data.txt'
+Generating synthetic gyy data:
+  grid type: regular
+  data points = 2601
+Saving gravity field data to file 'gyy_tar.txt'
+Generating synthetic gyz data:
+  grid type: regular
+  data points = 2601
+Saving gravity field data to file 'gyz_tar.txt'
+Generating synthetic gzz data:
+  grid type: regular
+  data points = 2601
+Saving gravity field data to file 'gzz_tar.txt'
+Building prism mesh:
+  Discretization: nx=50 X ny=50 X nz=15 = 37500 prisms
+  Cell dimensions: dx=100 X dy=100 X dz=100
+Getting seeds from mesh:
+  seed: {'cell': {'x2': 800.0, 'x1': 700.0, 'value': 1200, 'y1': 3200.0, 'y2': 3300.0, 'z1': 500.0, 'z2': 600.0}, 'index': 14107, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 1200.0, 'x1': 1100.0, 'value': 1200, 'y1': 3200.0, 'y2': 3300.0, 'z1': 500.0, 'z2': 600.0}, 'index': 14111, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 1700.0, 'x1': 1600.0, 'value': 1200, 'y1': 3200.0, 'y2': 3300.0, 'z1': 500.0, 'z2': 600.0}, 'index': 14116, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 2100.0, 'x1': 2000.0, 'value': 1200, 'y1': 3200.0, 'y2': 3300.0, 'z1': 500.0, 'z2': 600.0}, 'index': 14120, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 2500.0, 'x1': 2400.0, 'value': 1200, 'y1': 3200.0, 'y2': 3300.0, 'z1': 500.0, 'z2': 600.0}, 'index': 14124, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 2900.0, 'x1': 2800.0, 'value': 1200, 'y1': 3200.0, 'y2': 3300.0, 'z1': 500.0, 'z2': 600.0}, 'index': 14128, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 3300.0, 'x1': 3200.0, 'value': 1200, 'y1': 3200.0, 'y2': 3300.0, 'z1': 500.0, 'z2': 600.0}, 'index': 14132, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 3700.0, 'x1': 3600.0, 'value': 1200, 'y1': 3200.0, 'y2': 3300.0, 'z1': 500.0, 'z2': 600.0}, 'index': 14136, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 4200.0, 'x1': 4100.0, 'value': 1200, 'y1': 3200.0, 'y2': 3300.0, 'z1': 500.0, 'z2': 600.0}, 'index': 14141, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 3300.0, 'x1': 3200.0, 'value': 1200, 'y1': 2000.0, 'y2': 2100.0, 'z1': 500.0, 'z2': 600.0}, 'index': 13532, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 3600.0, 'x1': 3500.0, 'value': 1200, 'y1': 2000.0, 'y2': 2100.0, 'z1': 500.0, 'z2': 600.0}, 'index': 13535, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 4000.0, 'x1': 3900.0, 'value': 1200, 'y1': 2000.0, 'y2': 2100.0, 'z1': 500.0, 'z2': 600.0}, 'index': 13539, 'neighbors': [], 'density': 1200}
+  seed: {'cell': {'x2': 4300.0, 'x1': 4200.0, 'value': 1200, 'y1': 2000.0, 'y2': 2100.0, 'z1': 500.0, 'z2': 600.0}, 'index': 13542, 'neighbors': [], 'density': 1200}
+Growing density model:
+  parameters = 37500
+  data = 7803
+  seeds = 13
+  compactness = 100000
+  power = 5
+  threshold = 0.0001
+  norm = l1
+  neighbor type = reduced
+  distance type = radial
+  Jacobian matrix file = None
+  initial misfit = 325197
+  initial total goal function = 325197
+    Exited because couldn't grow.
+  Size of estimate: 1576 cells
+  Filling estimate with zeros...
+  Total inversion time: 130.503 s
+Saving gravity field data to file 'gzz_adj.txt'
+Saving gravity field data to file 'gyz_adj.txt'
+Saving gravity field data to file 'gyy_adj.txt'
+Plotting

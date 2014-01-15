@@ -1,0 +1,23 @@
+Fatiando a Terra:
+  version: 0.0.1
+  date: Mon Apr  9 17:22:42 2012
+  changeset: 3edcc61b5058+ tip
+
+Generating regular grid:
+  area = (x1, x2, y1, y2) = (0, 5000, 0, 5000)
+  shape = (ny, nx) = (26, 26)
+  spacing = (dy, dx) = (200.0, 200.0)
+  points = nx*ny = 676
+  z = -150
+Contaminating data with Gaussian noise:
+  noise stddev = 5
+Contaminating data with Gaussian noise:
+  noise stddev = 5
+Contaminating data with Gaussian noise:
+  noise stddev = 5
+Contaminating data with Gaussian noise:
+  noise stddev = 5
+Contaminating data with Gaussian noise:
+  noise stddev = 5
+Contaminating data with Gaussian noise:
+  noise stddev = 5

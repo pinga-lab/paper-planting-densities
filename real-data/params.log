@@ -1,0 +1,19 @@
+Fatiando a Terra:
+  version: 0.0.1
+  date: Fri Mar 30 17:34:54 2012
+  changeset: 3edcc61b5058+ tip
+
+Generating 3D right rectangular prism mesh:
+  bounds = (x1, x2, y1, y2, z1, z2) = [0.0, 6617.29, 0.0, 4902.6700000000001, -1342.6099999999999, -400]
+  shape = (nz, ny, nx) = (20, 100, 130)
+  number of prisms = 260000
+  prism dimensions = (dz, dy, dx) = (47.1305, 49.0267, 50.90223076923077)
+Sowing seeds in the mesh:
+  found 46 seeds
+  time: 0h 0m 0.05000s
+Making the jury
+Running the inversion
+Final goal function value: 2.31401
+Total time for inversion: 0h 7m 27.82000s
+Total number of accretions: 3794
+Average time per accretion: 0h 0m 0.11803s

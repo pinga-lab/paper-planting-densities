@@ -1,0 +1,1524 @@
+
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\mat}[1]{\mathbf{#1}}
+\newcommand{\comp}[1]{#1^{\alpha\beta}}
+\newcommand{\norm}[1]{\left|\left|#1\right|\right|}
+
+\begin{document}
+
+\title{ROBUST 3D GRAVITY GRADIENT INVERSION BY\\ PLANTING ANOMALOUS DENSITIES}
+
+% manuscript number
+\ms{GEO-2011-0388}
+
+\address{
+    \footnotemark[1]
+    Observat\'orio Nacional, Geophysics Department\\
+    Rio de Janeiro, Brazil\\
+    e-mail: leouieda@gmail.com; valcris@on.br}
+
+\author{Leonardo Uieda\footnotemark[1] and
+        Val\'eria C. F. Barbosa\footnotemark[1]}
+
+\lefthead{Uieda \& Barbosa}
+\righthead{Robust 3D gravity gradient inversion}
+
+
+{\center
+This technical paper was presented in 2011 at 81st SEG Annual Meeting.\\
+The original paper was submitted on October 3, 2011.\\[2cm]}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+We have developed a new gravity gradient inversion method for
+estimating a 3D density-contrast distribution defined on a grid of rectangular
+prisms.
+Our method consists of an iterative algorithm that does not require the
+solution of an equation system. Instead, the solution grows systematically
+around user-specified prismatic elements, called ``seeds'', with given density
+contrasts.
+Each seed can be assigned a different density-contrast value,
+allowing the interpretation of multiple sources with different density contrasts
+and that produce interfering signals.
+In real world scenarios, some sources might not be targeted for the
+interpretation. Thus, we developed a robust procedure that neither requires the
+isolation of the signal of the targeted sources
+prior to the inversion nor requires substantial prior information about
+the non-targeted sources.
+In our iterative algorithm, the estimated sources grow
+by the accretion of prisms in the periphery of the current estimate.
+In addition, only the columns of the sensitivity matrix
+corresponding to the prisms in the periphery of the current estimate are
+needed for the computations.
+Therefore, the individual columns of the sensitivity matrix
+can be calculated on demand and deleted after an accretion takes place, greatly
+reducing the demand for computer memory and processing time.
+Tests on synthetic data show the ability of our method to correctly recover the
+geometry of the targeted sources, even when interfering
+signals produced by non-targeted sources are
+present.
+Inverting the data from an airborne gravity gradiometry survey flown over the
+iron ore province of Quadril\'atero Ferr\'ifero, southeastern Brazil, we
+estimate a compact iron ore body that is in agreement with geologic information
+and previous interpretations.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+Historically, the vertical component of the gravity field has been widely
+used in exploration geophysics due to the simplicity of its measurement and
+interpretation.
+This fact propelled the development of a large variety of gravity
+inversion methods.
+Conversely, the technological difficulties in the acquisition of
+accurate airborne gravity gradiometry data resulted in a delay in the
+development of methods for the inversion of this kind of data.
+Consequently, before the early 1990s, few papers published in the literature
+were devoted to the interpretation (or analysis) of gravity gradiometer data.
+At this point, two papers deserve the general readers' attention.
+The first one is \citet{vasco} which presents a comparative study of the
+vertical
+component of gravity and the gravity gradient tensor by analyzing their
+parameter resolution and variance matrices.
+The second paper is \citet{pedersen} which studied data of gravity
+and magnetic gradient tensors and introduced scalar invariants that indicate the
+dimensionality of the sources.
+\\ \indent 
+Recent technological developments of moving-platform gravity gradiometers made
+it feasible to accurately measure the five linearly independent components
+of the gravity gradient tensor.
+These technological advances, paired with the advent of global positioning
+systems (GPS), have opened a new era in the acquisition of accurate airborne
+gravity gradiometry data.
+Thus, airborne gravity gradiometry has come to be a useful tool for interpreting
+geologic bodies present in both mining and hydrocarbon exploration areas.
+Gravity gradiometry has the advantage, compared with other gravity methods,
+of being extremely sensitive to localize density contrasts within regional
+geological settings \citep{zhdanov10b}.
+\\ \indent 
+Recently, some gravity gradient inversion algorithms have been adapted to
+predominantly interpret both orebodies that are important mineral
+exploration targets \citep[e.g.,][]{li, zhdanov04, martinez, wilson},
+and salt bodies in a sedimentary setting \citep[e.g.,][]{jorgensen, routh}.
+All these methods discretize the Earth's subsurface into prismatic cells with
+homogeneous density contrasts and estimate a 3D density-contrast distribution,
+thus retrieving an image of geologic bodies.
+Usually, a gravity gradient data set contains a huge volume of observations of
+the five linearly independent tensor components.
+These observations are collected every few meters in surveys that may contain
+hundreds to thousands of line kilometers.
+This massive data set combined with the discretization of the Earth's subsurface
+into a fine grid of prisms results in a large-scale 3D inversion with hundreds
+of thousands of parameters and tens of thousands of data.
+\\ \indent 
+The solution of a large-scale 3D inversion requires overcoming two main
+obstacles.
+The first one is the large amount of computer memory required to
+store the matrices used in the computations, particularly the sensitivity
+matrix.
+The second obstacle is the computational time
+required for matrix-vector multiplications
+and to solve the resulting linear system.
+One approach to overcome these problems is to use the fast Fourier transform for
+matrix-vector multiplications by exploiting the translational invariance of the
+kernels to reduce the linear operators to Toeplitz block structure
+\citep{pilkington, zhdanov04, wilson}.
+However, these approaches are unable to deal with data on an irregular grid or
+on an uneven surface.
+Furthermore, the observations must lie above the surface topography, so these
+approaches cannot be applied to borehole data.
+Another strategy for the solution of large-scale 3D inversions involves using a
+variety of data compression techniques.
+\citet{portniaguine02} use a compression technique based on cubic interpolation.
+\citet{li_oldenburg03} use a 3D wavelet compression on each row of the
+sensitivity matrix.
+Most recently, an alternative strategy for the solution of large-scale 3D
+inversion has been used under the name of ``moving footprint''
+\citep{cox, zhdanov10a, wilson}.
+In this approach the full sensitivity matrix is not computed; rather, for each
+row, only the few elements that lie within the radius of the footprint size are
+calculated.
+In other words, the $j$th element of the $i$th row of sensitivity matrix only
+needs to be computed if its distance from the $i$th observation is smaller than
+a pre-specified footprint size (expressed in kilometers).
+The footprint size is a threshold value defined by the user and will depend on
+the natural decay of the Green's function for the gravity field.
+The smaller the footprint size, the larger the number of null elements in the
+rows of the sensitivity matrix; hence, the faster the inversion will be
+but also the greater is the loss of accuracy.
+The user can then either accept the result or increase the footprint size and
+restart the inversion.
+This procedure leads to a sparse representation of the sensitivity matrix
+allowing the solution of intractable large-scale 3D inversions via the
+conjugate gradient technique.
+\\ \indent 
+Depending on the regularization function used, inversion methods for estimating
+a 3D density-contrast distribution
+that discretize the Earth's subsurface into prismatic cells can produce either
+blurred images \citep[e.g.,][]{li_oldenburg98} or sharp images of the anomalous
+sources \citep[e.g.,][]{portniaguine99, zhdanov04, silvadias09, silvadias11}.
+Nevertheless, all of the above-mentioned methods require the solution of a
+large linear system, which is, as pointed out before, one of the biggest
+computational hurdles for large-scale 3D inversions.
+Alternatively, there is a class of gravity inversion methods that do not solve
+linear systems but instead search the space of possible solutions for an
+optimum one.
+This class can be further divided into methods that use random search and
+those that use systematic search algorithms.
+Among the methods that use random search, we draw attention to the two following
+methods.
+\citet{nagihara} estimate a 3D density-contrast distribution using the
+simulated annealing algorithm (SA).
+\citet{krahenbuhl} retrieve a salt body subject to density contrast
+constraints by developing a hybrid algorithm that combines the genetic
+algorithm (GA) with a modified form of SA as well as a local search technique
+that is not activated at every generation of the GA.
+On the other hand, examples of methods that use a
+systematic search are the methods of
+\citet{zidarov}, \citet{camacho}, and
+\citet{rene}.
+\citeauthor{zidarov}'s \citeyearpar{zidarov} bubbling method looks
+for a compact source solution (without hollows in its interior) by transforming
+a given initial nonnull spatially discrete density-contrast distribution
+$\rho$ inside a region $\Re$ into a constant distribution $\rho^\ast \le \rho$
+inside a region $\Re^\ast \supset \Re$ by successive redistribution of the
+excess of mass of $\rho$ relative to $\rho^\ast$ in outward directions.
+Both distributions fit the gravity data. To overcome the difficulty of setting
+an initial density-contrast distribution $\rho$ that not only fits the data,
+but also satisfies the constraint that $\rho$ be everywhere greater than or
+equal to a specified upper bound, \citet{cordell} adapts the bubbling
+method starting with point mass estimates obtained via Euler's homogeneity
+equation.
+Following the class of systematic search methods, \citet{camacho}
+estimates a 3D density-contrast distribution using a systematic search to
+iteratively ``grow'' the solution, one prismatic element at a time, from a
+starting distribution with zero density contrast.
+At each iteration a new prismatic element is added to the estimate with a
+pre-specified positive or negative density contrast.
+This new prismatic element is chosen by systematically searching the set of all
+prisms that still have zero density contrast for the one whose incorporation
+into the estimate minimizes a goal function composed of the data-misfit function
+plus the $\ell_2$-norm of the weighted 3D density-contrast distribution.
+Also belonging to the class of systematic search methods is \citet{rene}, which
+is able to recover 2D compact bodies (i.e., with no hollows
+inside) with sharp contacts by successively incorporating new prisms around
+user-specified prisms called ``seeds''.
+These seeds have a given set of density contrasts, all of which must have
+the same sign.
+At the first iteration, the new prism that will be incorporated is chosen by
+systematically searching the set of neighboring prisms of the seeds for the one
+that minimizes a ``shape-of-anomaly'' function.
+From the second iteration on, the search is performed over the set of
+available neighboring prisms of the current estimate.
+Thus, the solution grows through the addition of prisms to its periphery, in a
+manner mimicking the growth of crystals.
+\citeauthor{rene}'s \citeyearpar{rene} method
+is restricted to interpret density-contrast distributions with a single
+sign and its estimated solution can be allowed to grow in any
+combination of user-specified directions.
+\\ \indent
+These inversion methods that do not solve linear systems have been applied to
+the vertical component of the gravity field yielding good results.
+To our knowledge, such class of methods has not been previously applied to
+interpret gravity gradiometry data.
+Besides, these methods are unable to deal with the presence of
+interfering signals produced by non-targeted
+sources that can be interpreted as geological noise.
+This is a common scenario encountered in complex geological settings where the
+signal of non-targeted sources cannot be
+completed removed from the data.
+In the literature, few inversion methods have addressed this issue of
+interpreting only targeted sources when in the presence of non-targeted sources
+in a geologic setting \citep[e.g.,][]{silva_holmann, silva_cutrim, silvadias07}.
+The typical approach is to require the interpreter to perform some sort of data
+preprocessing in order to remove the signal
+produced by the non-targeted geologic sources.
+This preprocessing generally involves filtering the observed data based on the
+assumed spectral content of the targeted sources.
+However, separating the signal of multiple
+sources is often impractical, if not impossible.
+An effective way to overcome this problem is to devise an inversion method that
+simultaneously estimates targeted geologic sources and
+reduces the undesired effects
+produced by the non-targeted sources by means of a robust data-fitting
+procedure.
+\citet{silva_holmann} and \citet{silva_cutrim}, for example, minimized,
+respectively, the $\ell_1$-norm and the Cauchy-norm of the residuals (the
+difference between the observed and predicted data) to take into account the
+presence of non-targeted sources.
+Both data-fitting procedures are more robust than the typical least-squares
+approach of minimizing the $\ell_2$-norm of the residuals, because they allow
+the presence of large residual values.
+\\ \indent
+We present a new gravity gradient inversion for estimating a 3D density-contrast
+distribution belonging to the class of methods that do not solve linear systems,
+but instead implement a systematic search algorithm.
+Like \citet{rene}, we incorporate prior information into the solution using
+seeds (i.e., user-specified prismatic elements) around which the solution grows.
+In contrast with \citeauthor{rene}'s \citeyearpar{rene} method, our approach can
+be used to interpret multiple geologic sources with density contrasts of
+different signs. This is possible because our approach allows
+assigning a different density contrast to each seed and does not impose
+any restrictions on the sign of the gravity anomaly.
+We impose compactness on the solution using a modified version of the
+regularizing function proposed by \citet{silvadias09}.
+We use as a data-misfit function the
+$\ell_1$-norm of the residuals because
+it tolerates large data residuals.
+This is a desirable feature of the $\ell_1$-norm because it means that it
+is less influenced by both outliers in the observed data and non-targeted
+sources.
+Therefore, our approach requires neither substantial amounts of prior
+information about the
+non-targeted sources nor the isolation
+of the effect of the targeted sources through preprocessing.
+Finally, we exploit the fact that our systematic search is limited to the
+neighboring prisms of the current estimate to implement a lazy evaluation
+\citep{lazyeval} of the
+sensitivity matrix, thus achieving a fast and memory efficient inversion.
+Tests on synthetic data and on airborne gravity gradiometry data collected over
+the Quadril\'atero Ferr\'ifero, southeastern Brazil, confirmed the potential of
+our method in producing sharp images of the targeted anomalous density
+distribution (iron orebody) in the presence of non-targeted sources.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methodology}
+
+
+Let $\vect{g}^{\alpha\beta}$ be an $L$-dimensional vector that contains observed
+values of the $g_{\alpha\beta}$ component of the gravity gradient tensor, where
+$\alpha$ and $\beta$ belong to the set of $x$-, $y$-, and $z$-directions of a
+right-handed Cartesian coordinate system (Figure \ref{fig:interpmodel}).
+We define this coordinate system with its
+$x$-axis pointing north, $y$-axis pointing east, and $z$-axis pointing down.
+We assume that $\vect{g}^{\alpha\beta}$ is caused by an anomalous density
+distribution contained within a three-dimensional region of the subsurface.
+This region can be discretized into juxtaposed 3D right rectangular prisms
+composing an interpretative model (Figure \ref{fig:interpmodel}).
+Each prism in this model has a homogeneous density contrast and the resulting
+piecewise-constant anomalous density distribution is assumed to be sufficient to
+approximate the true one.
+It follows that the $g_{\alpha\beta}$ component of the gravity gradient
+tensor produced by the anomalous density distribution can be approximated by
+the sum of the contributions of each prism of the interpretative model, i.e.,
+
+\begin{equation}
+\vect{d}^{\alpha\beta} = \sum\limits_{j=1}^{M} p_j \vect{a}_j^{\alpha\beta}.
+\label{eq:dalphabeta_sum}
+\end{equation}
+
+\noindent
+This linear relationship can be written in matrix notation as
+
+\begin{equation}
+\vect{d}^{\alpha\beta} = \mat{A}^{\alpha\beta} \vect{p},
+\label{eq:dalphabeta_mat}
+\end{equation}
+
+\noindent
+where $\vect{p}$ is an $M$-dimensional vector whose
+$j$th element, $p_j$, is the density contrast of the $j$th prism of the
+interpretative model, $\vect{d}^{\alpha\beta}$ is an
+$L$-dimensional vector of data predicted by $\vect{p}$
+which one would expect approximates $\vect{g}^{\alpha\beta}$, and 
+$\mat{A}^{\alpha\beta}$ is the $L \times M$
+sensitivity matrix, whose $j$th column is the
+$L$-dimensional vector $\vect{a}_j^{\alpha\beta}$. 
+The $i$th element of $\vect{a}_j^{\alpha\beta}$ is numerically equal to the
+$g_{\alpha\beta}$ component of the gravity gradient tensor caused by the $j$th
+prism of the interpretative model, with unit density contrast, calculated at
+the place where the $i$th observation was made.
+It is then evident that the $j$th column of the sensitivity
+matrix represents the influence that $p_j$ has on the predicted data. 
+The elements of matrix $\mat{A}^{\alpha\beta}$ can be calculated using the
+formulas of \citet{nagy}.
+\\ \indent
+Let $\vect{r}^{\alpha\beta}$ be the $L$-dimensional residual
+vector of the $g_{\alpha\beta}$ component of the gravity gradient tensor, i.e.,
+
+\begin{equation}
+    \vect{r}^{\alpha\beta} = \vect{g}^{\alpha\beta} - \vect{d}^{\alpha\beta}.
+    \label{eq:residual}
+\end{equation}
+
+\noindent We define the data-misfit function $\phi_{\alpha\beta}(\vect{p})$
+of the $g_{\alpha\beta}$ component of the gravity gradient tensor as a norm of
+the residual vector $\vect{r}^{\alpha\beta}$. For a least-squares fit,
+$\phi_{\alpha\beta}(\vect{p})$ is defined as the
+$\ell_2$-norm of the residual vector.
+The least-squares fit distributes the residuals assuming that the errors in the
+data follow a short-tailed Gaussian distribution and thus sporadically large
+residual values are highly improbable \citep{claerbout, silva_holmann, menke,
+tarantola}.
+Hence, the $\ell_2$-norm is known to be sensitive to outliers in the data, which
+can result from either gross errors or geological noise (i.e., anomalous
+densities which are not of interest to the interpretation).
+On the other hand, if occasional large residuals are desired in the inversion,
+one can use the $\ell_1$-norm of the residual vector.
+Here, we have chosen the normalized $\ell_1$-norm of the $L$-dimensional
+residual vector $\vect{r}^{\alpha\beta}$, hence,
+the data-misfit function is defined as
+
+\begin{equation}
+\phi_{\alpha\beta}(\vect{p}) =
+\frac{\norm{\vect{r}^{\alpha\beta}}_1}{\norm{\vect{g}^{\alpha\beta}}_1} =
+\frac{\sum\limits_{i=1}^{L}\left|g_i^{\alpha\beta} - d_i^{\alpha\beta}\right|}
+     {\sum\limits_{i=1}^{L}\left|g_i^{\alpha\beta}\right|}.
+\label{eq:phi}
+\end{equation}
+
+\noindent
+In this case, the errors in the data are assumed to follow a long-tailed
+Laplace distribution and a more robust fit is obtained since the predicted data
+will be insensitive to outliers.
+\\ \indent
+Let us assume that there are $N_c$ components of the gravity tensor
+available.
+Hence, the total data-misfit function $\Phi(\vect{p})$ can be defined as the
+sum of the individual data-misfit functions for each of the $N_c$ components,
+i.e.,
+
+\begin{equation}
+\Phi(\vect{p}) = \sum\limits_{k=1}^{N_c}\phi_k(\vect{p}),
+\label{eq:Phi}
+\end{equation}
+
+\noindent
+where $\phi_k(\vect{p})$ is the $k$th function in the set of
+$N_c$ available data-misfit functions. For example, if the available components
+are $g_{xx}$, $g_{yy}$, and $g_{zz}$, in that order, then $N_c = 3$ and
+$\phi_1(\vect{p}) \equiv \phi_{xx}(\vect{p})$, 
+$\phi_2(\vect{p}) \equiv \phi_{yy}(\vect{p})$, and
+$\phi_3(\vect{p}) \equiv \phi_{zz}(\vect{p})$, all given by equation
+\ref{eq:phi}.
+
+\indent
+Regardless of the norm used in the data-misfit function,
+the inverse problem of
+estimating a three-dimensional density-contrast distribution from
+gravity gradiometry data is ill-posed and requires additional constraints to be
+transformed into a well-posed problem with a unique and stable solution.
+The constraints chosen for our method are:
+
+\begin{description}
+\item[Constraint 1.] the solution should be compact (i.e., without
+    any hollows inside it). 
+\item[Constraint 2.] the excess (or deficiency of) mass contained
+    in the solution should be concentrated around user-specified prisms of the
+    interpretative model with known density contrasts (referred to as
+    ``seeds'').
+\item[Constraint 3.] the only density-contrast values allowed are
+    zero or the values assigned to the seeds.
+\item[Constraint 4.] each element of the solution should have the
+    density contrast of the seed closest to it.
+\end{description}
+
+\noindent We solve the constrained inverse problem of estimating a
+parameter vector $\vect{p}$ subject to these constraints through an iterative
+algorithm named ``planting algorithm'', as explained bellow.
+At each iteration, this algorithm evaluates the goal function
+
+\begin{equation}
+\Gamma(\vect{p}) = \Phi(\vect{p}) + \mu\theta(\vect{p}),
+\label{eq:goal}
+\end{equation}
+
+\noindent
+where $\theta(\vect{p})$ is a regularizing function defined in the parameter
+(model) space that imposes physical and/or geological attributes on the
+solution.
+The scalar $\mu$ is a regularizing parameter that balances the tradeoff between
+the total data-misfit
+function $\Phi(\vect{p})$ (equation \ref{eq:Phi}) and the regularizing
+function $\theta(\vect{p})$.
+The regularizing function $\theta(\vect{p})$ is an adaptation of the one used in
+\citet{silvadias09}, which in turn is a modified version of the one used by
+\citet{guillen_menichetti} and \citet{silva_barbosa06}.
+It enforces the compactness of the solution and the concentration of mass around
+the seeds (i.e., constraints 1 and 2), being defined as
+
+\begin{equation}
+\theta(\vect{p}) = \frac{1}{f} \sum\limits_{j=1}^{M} \frac{p_j}{p_j + \epsilon}
+    l_j,
+\label{eq:regul}
+\end{equation}
+
+\noindent
+where $p_j$ is the $j$th element of $\vect{p}$, $l_j$ is the distance between
+the center of the $j$th prism and the center of a seed
+(see subsection Planting algorithm), $\epsilon$ is a small positive
+scalar used to avoid a singularity when
+$p_j=0$, and the scalar $f$ is the average extent of the interpretative model,
+defined as
+
+\begin{equation}
+f = \frac{\Delta x + \Delta y + \Delta z}{3},
+\label{eq:f}
+\end{equation}
+
+\noindent
+where $\Delta x$, $\Delta y$, and $\Delta z$ are
+the lengths of the interpretative model
+in the $x$-, $y$-, and $z$-directions, respectively
+(Figure \ref{fig:interpmodel}).
+\\ \indent
+In practice, the scalar $\epsilon$ (equation \ref{eq:regul}) is not
+necessary because one can simply add
+either zero or $l_j$ when evaluating the regularizing function.
+Furthermore, the value of the regularizing parameter
+$\mu$ should be selected through trial and error. 
+A small value of $\mu$ is not able to estimate compact sources, whereas a large
+value of $\mu$ produces compact solutions that might not fit the observed data.
+To determine an adequate value for $\mu$, we start with a small value,
+typically $10^{-5}$.
+Then, if needed, the value is raised until the estimated
+density-contrast distribution achieves the desired compactness.
+\\
+\indent
+The two remaining constraints (3 and 4) are imposed algorithmically, as
+explained bellow.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Planting algorithm}
+
+Our systematic search algorithm, named ``planting algorithm'', requires
+that a set of $N_S$ seeds and their associated density-contrast values be
+specified by the user.
+Each seed is a prism of the interpretative model.
+We emphasize that the density-contrast values of the seeds do not need to be
+the same.
+These seeds should be chosen according to prior information about
+the targeted anomalous sources, such as those provided by the available
+geologic models, well logs, and interpretations using other geophysical data
+sets.
+The planting algorithm starts with an initial
+parameter vector that includes the density-contrast values assigned to the seeds
+and has all other elements set to zero (Figure \ref{fig:sketch}a).
+Hence, by recalling equations 
+\ref{eq:dalphabeta_sum} and \ref{eq:residual}, we
+can define the initial residual vector of the $g_{\alpha\beta}$ component
+of the gravity gradient tensor as
+
+\begin{equation}
+\vect{r}_{(0)}^{\alpha\beta} = \vect{g}^{\alpha\beta} -
+\left(\sum\limits_{s=1}^{N_S} \rho_s \vect{a}_{j_s}^{\alpha\beta}\right),
+\label{eq:residual_initial}
+\end{equation}
+
+\noindent
+where $\rho_s$ is the density contrast of the $s$th seed, $j_s$ is the
+corresponding index of the $s$th seed in the parameter vector $\vect{p}$, and
+$\vect{a}_{j_s}^{\alpha\beta}$ is the $L$-dimensional column vector of the
+sensitivity matrix $\mat{A}^{\alpha\beta}$ (equation \ref{eq:dalphabeta_mat})
+corresponding to the $s$th seed.
+We can then proceed to calculate the initial total data-misfit function
+$\Phi_{(0)}$ (equation \ref{eq:Phi}), which depends on
+$\vect{r}_{(0)}^{\alpha\beta}$.
+\\
+\indent
+The solution to the constrained inverse problem is then built through an
+iterative growth process.
+Initially, to each seed is assigned a list of its neighboring prisms
+(prisms that share a face with the seed).
+An iteration of the growth process consists of attempting to grow,
+one at a time, each of the $N_S$ seeds by performing the accretion of
+a prism from the seed's list of neighboring prisms.
+We define the accretion of a prism as changing its density-contrast value from
+zero to the density contrast of the seed undergoing the accretion,
+guaranteeing constraint 3. 
+Thus, a growth iteration is composed of at most $N_S$ accretions,
+one for each seed.
+Furthermore, constraint 4 is guaranteed because only prisms from the
+list of neighboring prisms of the seed undergoing the accretion are eligible to
+be accreted to that seed.
+\\
+\indent
+The choice of a neighboring prism for the accretion to the $s$th
+seed follows two criteria:
+
+\begin{enumerate}
+    \item The addition of the neighboring prism to the current estimate should
+    reduce the total data-misfit function
+    $\Phi(\vect{p})$ (equations \ref{eq:Phi}), as compared
+    to the previous accretion iteration.
+    This ensures that the solution grows in a way that best fits the observed
+    data.
+    To avoid an exaggerated growth of the estimated anomalous densities, the
+    algorithm does not perform the accretion of neighboring prisms that produce
+    very small changes in the total data-misfit function.
+    The criterion for how small a change is accepted is based on whether the
+    following inequality holds:
+
+    \begin{equation}
+    \frac{|\Phi_{(new)} - \Phi_{(old)}|}{\Phi_{(old)}} \ge \delta,
+    \label{eq:delta}
+    \end{equation}
+
+    where $\Phi_{(new)}$ is the total data-misfit function
+    evaluated with the chosen neighboring prism included in the estimate,
+    $\Phi_{(old)}$ is the total data-misfit
+    function evaluated during the previous accretion iteration, and $\delta$ is
+    a positive scalar typically ranging from $10^{-3}$ to $10^{-6}$.
+    Parameter $\delta$ controls how much the anomalous densities are allowed to
+    grow.
+    The choice of the value of $\delta$ depends on the size of the prisms of the
+    interpretative model.
+    The smaller the prisms are, the smaller their contribution to
+    $\Phi(\vect{p})$ will be and thus the smaller $\delta$ should be.
+
+    \item The addition of the neighboring prism with density contrast $\rho_s$
+    to the current estimate should produce the smallest value of the goal
+    function $\Gamma(\vect{p})$ (equation \ref{eq:goal}) out of
+    all other
+    prisms in the list of neighboring prisms of the
+    $s$th seed that obeyed the first criterion.
+    Thus, the accretion of the neighboring prism to the current estimate will
+    produce the highest decrease in the total data-misfit function
+    (equation \ref{eq:Phi}) as well as
+    the lowest increase in the regularizing function $\theta(\vect{p})$
+    (equation \ref{eq:regul}).
+    This ensures that constraints 1, 2, and 4 are met.
+    We clarify here that the term $l_j$ in equation \ref{eq:regul} is
+    the distance between the
+    center of the $j$th prism and the center of the $s$th seed (i.e., the
+    one that is undergoing the accretion).
+    We stress that the $j$th prism belongs to the list of neighboring
+    prisms of the $s$th seed.
+\end{enumerate}
+
+\indent
+Once the accretion of the $j$th
+prism is performed to the $s$th seed, the neighboring prisms of the
+$j$th prism are included in the the $s$th seed's list of neighboring prisms
+and the $j$th prism is removed from this list (Figure
+\ref{fig:sketch}b).
+It is important to note that the list of seeds is not modified along the
+iterations of our algorithm. Rather, the list of neighboring prisms of a seed
+varies each time it suffers an accretion.
+Finally, we update the residual vectors of the $N_c$
+available components. The updated residual vector of the
+$g_{\alpha\beta}$ component of the gravity gradient tensor is given by
+
+\begin{equation}
+\vect{r}_{(new)}^{\alpha\beta} =
+\vect{r}_{(old)}^{\alpha\beta} - p_j\vect{a}_j^{\alpha\beta},
+\label{eq:residual_update}
+\end{equation}
+
+\noindent
+where $\vect{r}_{(new)}^{\alpha\beta}$ is the
+updated residual vector,
+$\vect{r}_{(old)}^{\alpha\beta}$ is the
+residual vector evaluated in the previous accretion iteration, $j$ is the index
+of the neighboring prism chosen for the accretion, $p_j = \rho_s$, and
+$\vect{a}_j^{\alpha\beta}$ is the $j$th column vector
+of the sensitivity matrix $\mat{A}^{\alpha\beta}$.
+In the case that none of the neighboring prisms of the $s$th seed meet the first
+criterion, the $s$th seed does not grow during this growth iteration. 
+This ensures that different seeds can produce anomalous densities of different
+sizes.
+The growth process continues while at least one of the seeds is able to grow.
+At the end of the growth process, our planting algorithm should yield a solution
+composed of compact anomalous densities with variable sizes
+(Figure \ref{fig:sketch}c).
+\citet{Uieda2012} show an animation of this growth process
+when the planting algorithm is applied to
+synthetic data of the $g_{zz}$ component of the gravity gradient tensor.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Lazy evaluation of the sensitivity matrix}
+
+In our planting algorithm all elements of the parameter vector not corresponding
+to the seeds start with zero density contrast.
+It is then noticeable from equations
+\ref{eq:dalphabeta_sum} and \ref{eq:residual_initial} that
+the columns of the sensitivity
+matrices $\mat{A}^{\alpha\beta}$ that do not correspond to
+the seeds are not required for the initial computations.
+Moreover, the search for the next element of the parameter vector for the
+accretion is restricted to the list of neighboring prisms of the seeds.
+This means that the $j$th column vectors
+$\vect{a}_j^{\alpha\beta}$ of the sensitivity matrices only need to be
+calculated once the $j$th prism of the interpretative model becomes eligible
+for accretion (i.e., becomes a member of the list of neighboring prisms
+of a seed).
+In addition, our algorithm updates the residual vectors after each
+successful accretion through equation \ref{eq:residual_update}.
+Once the $j$th prism is permanently incorporated
+into the current solution, the column vectors
+$\vect{a}_j^{\alpha\beta}$ are no longer needed.
+Thus, the full sensitivity matrices $\mat{A}^{\alpha\beta}$ are not needed at
+any single time during the growth process.
+Column vectors of $\mat{A}^{\alpha\beta}$ can be
+calculated on demand and deleted once they are no longer required
+(i.e., after an accretion).
+This technique is known in computer science as a ``lazy evaluation''
+\citep{lazyeval}.
+Since the computation of the full sensitivity matrix is a
+time- and memory-consuming process, the implementation of a lazy evaluation of
+$\mat{A}^{\alpha\beta}$
+leads to fast inversion times and low memory usage, making viable the inversion
+of large data sets using fine grids of prisms for the interpretative models
+without needing supercomputers or data compression algorithms
+\citep[e.g.,][]{portniaguine02}. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Presence of non-targeted sources}
+
+In real world scenarios there are interfering signals
+produced by multiple and horizontally separated sources (Figure
+\ref{fig:robust}a).
+Some of these sources may be of no interest to the interpretation
+(i.e., non-targeted sources) or there may not be enough available prior
+information about them, like their approximate depths or density contrasts.
+Furthermore, in most cases it is not possible to separate the
+signal of the targeted and the non-targeted sources.
+It would then be desirable to provide seeds only for the targeted sources and
+that the estimated density-contrast distribution could be obtained without
+being affected by the signal of the non-targeted sources.
+For this purpose, one can use the $\ell_1$-norm of the residual vector
+(equation \ref{eq:phi})
+to allow large residual values in the signal that is most influenced
+by the non-targeted sources (Figure \ref{fig:robust}b).
+Thus, the inversion is less influenced by the signal
+yielded by the non-targeted sources by treating it as outliers in the data.
+Note that the $\ell_1$-norm by itself does not ``know'' which parts of the
+data should be treated as outliers.
+This information is indirectly incorporated into the inversion through the
+locations of the seeds provided for the targeted sources only.
+Therefore, the $\ell_1$-norm has to be used in conjunction with the strong
+mass-concentration constraints imposed by the regularizing function
+(equation \ref{eq:regul}).
+\\ \indent
+This robust procedure allows one to choose the targets of the interpretation
+without having to isolate their signal before performing the inversion.
+It also eliminates the need for prior information about the
+density contrast and approximate depth of the
+non-targeted sources, although their approximate horizontal locations
+are still required.
+Additionally, by using the $\ell_1$-norm of the residual vector we
+can also handle noisy outliers in the data, such as instrumental or operational
+errors.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Application to synthetic data}
+
+We applied our method to synthetic
+noise-corrupted data of the $g_{yy}$, $g_{yz}$, and $g_{zz}$ components
+of the gravity gradient tensor.
+Figure \ref{fig:synthdata}a shows a color-scaled map of the synthetic
+$g_{zz}$ component.
+Color-scaled maps of the $g_{yy}$ and $g_{yz}$ components
+are provided in Figure 1 of
+the supplementary material of \citet{Uieda2012b}.
+The synthetic data were produced by 11 rectangular parallelepipeds (Figure
+\ref{fig:synthresult}a) with density contrasts ranging from
+$-1\ \mathrm{g/cm}^3$ to $1.2\ \mathrm{g/cm}^3$.
+Each component was calculated on a regular grid of $51 \times 51$ observation
+points in the $x$- and $y$-directions, totaling 7,803 observations, with a grid
+spacing of 0.1 km along both directions.
+We corrupted the synthetic data with pseudorandom Gaussian noise with zero mean
+and 5 E\"otv\"os standard deviation.
+\\ \indent
+To demonstrate the efficiency of our method in retrieving only the targeted
+sources even in the presence of non-targeted ones, we chose only the sources
+with density contrast of $1.2\ \mathrm{g/cm}^3$ (red blocks in Figure
+\ref{fig:synthresult}a) as targets of the interpretation.
+Thus, we specified the set of 13 seeds shown in Figure
+\ref{fig:synthresult}b (nine for the largest
+source and four for the smallest one) and used the $\ell_1$-norm of the residual
+vector (equation \ref{eq:phi}) to ignore the signal of the non-targeted
+sources (all sources with density contrast different from
+$1.2\ \mathrm{g/cm}^3$) displayed as blue and yellow blocks in Figure
+\ref{fig:synthresult}a.
+The inversion was performed using an interpretative model consisting of 37,500
+juxtaposed rectangular prisms, $\mu=10^{-1}$, and $\delta = 10^{-4}$.
+We used the $g_{yy}$ and $g_{yz}$ components, as well as $g_{zz}$, because
+these two components emphasize
+the signal of the targeted sources, which are
+elongated in the $x$-direction.
+\\ \indent
+Figure \ref{fig:synthdata}a shows the predicted data
+(black contour lines)
+of the $g_{zz}$ component
+produced by the estimated density-contrast distribution
+shown in Figure \ref{fig:synthresult}c.
+The predicted data of the $g_{yy}$ and $g_{yz}$ components
+are provided in Figure 1 of
+the supplementary material of \citet{Uieda2012b}.
+By comparing the density-contrast estimates (Figure
+\ref{fig:synthresult}c) with the true targeted
+sources (red blocks in Figure \ref{fig:synthresult}a),
+we verify the good performance of our method
+in recovering targeted sources in the presence of non-targeted sources
+(blue and yellow blocks in Figure \ref{fig:synthresult}a)
+yielding interfering signals.
+The most striking feature of this inversion result is that it required neither
+prior information about the density contrasts and approximate depths of the
+non-targeted sources nor a signal separation to isolate the effect of the
+targeted sources.
+For comparison, Figure \ref{fig:synthdata}b shows
+a colored-contour map of the $g_{zz}$ component of the gravity gradient tensor
+produced by the targeted sources only
+(red blocks in Figure \ref{fig:synthresult}a)
+plotted against the predicted data (black contour lines in Figure
+\ref{fig:synthdata}a-b) produced by the estimated
+density-contrast distribution (Figure \ref{fig:synthresult}c).
+Notice that the inversion performed on the synthetic data set produced by both
+targeted and non-targeted sources (color-scale map in Figure
+\ref{fig:synthdata}a) was able to fit the isolated signals
+produced by the targeted sources as shown in Figure
+\ref{fig:synthdata}b (black contour lines).
+These results confirm the ability of our method to
+tolerate the large residuals caused by
+the non-targeted sources and successfully recover the
+targets of the interpretation.
+Furthermore, when performed on a standard laptop computer with an
+Intel\textregistered ~ Core\texttrademark ~ 2 Duo P7350 2.0 GHz processor, the
+total time for the inversion was approximately 46 seconds.
+\\ \indent
+In \citet{Uieda2012b},
+we also present a synthetic example
+illustrating the use of
+the normalized $\ell_{2}$-norm of the residual vector
+(equation \ref{eq:residual})
+in the data-mist function in
+a geologic setting composed of targeted sources only.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Sensitivity analysis}
+
+We present two analyses of important characteristics of our method.
+In the first one, we investigate the sensitivity of our method to
+uncertainties in the a priori information
+(i.e., location and density contrasts of the seeds).
+In the second analysis, we investigate the limitations of the robust procedure
+that was
+proposed to deal with the presence of non-targeted sources.
+For these purposes, we have conducted various tests on synthetic noise-corrupted
+data produced by two contiguous sources: a larger dipping source with density
+contrast of $1\ \mathrm{g/cm}^3$, and a smaller cubic source with density
+contrast of $-1\ \mathrm{g/cm}^3$
+(black outline in Figures \ref{fig:fullseeds},
+\ref{fig:wrongseeds},
+\ref{fig:oneseed}, and
+\ref{fig:samesign}).
+The depth to the tops of both sources is 0.2 km.
+All tests were undertaken on the $g_{xx}$, $g_{xy}$, $g_{xz}$, $g_{yy}$,
+$g_{yz}$, and $g_{zz}$ components of the gravity gradient tensor,
+which were computed at 150 meter height on a
+regular grid of $31 \times 31$ observation points and with grid spacing of
+1 km along the $x$- and $y$-directions.
+The data were contaminated with pseudorandom Gaussian noise with zero mean and
+standard deviation of 0.5 E\"otv\"os.
+The interpretative model used in the inversions consists of 27,000 juxtaposed
+right rectangular prisms.
+In all tests, only the large dipping source was the target of the
+interpretation.
+\\ \indent
+In the first test, we assigned three seeds
+(gray prisms in the inset of Figure \ref{fig:fullseeds})
+with density contrast of $1\ \mathrm{g/cm}^3$ to the targeted dipping source.
+These seeds have ideal locations and correctly describe the true framework of
+the targeted source.
+Figure \ref{fig:fullseeds} shows
+the estimated density-contrast distribution
+obtained by setting the inversion control variables
+$\mu = 1$ and $\delta = 10^{-4}$.
+This result demonstrates the excellent performance of our method in recovering
+the true target dipping source in the presence of the non-targeted cubic source
+with density contrast of $-1\ \mathrm{g/cm}^3$.
+The standard deviation of the residual vector of the $g_{zz}$ component
+(equation \ref{eq:residual})
+is 0.54 E\"otv\"os,
+which shows that the predicted data fit the synthetic data
+within the data error level of 0.5 E\"otv\"os
+that was used to contaminate the data.
+This test represents an ideal scenario and
+will be used as a baseline
+for comparison with subsequent tests.
+\\ \indent
+The second test was designed to assess the sensitivity of the planting algorithm
+to uncertainties in the density-contrast value of the targeted sources.
+Thus, we used the same seed locations and inversion control variables as in the
+first test, but assigned density contrasts to the seeds that were smaller and
+larger than the true value.
+The standard deviation of the residual vector of the $g_{zz}$ component
+was 0.53 E\"otv\"os,
+for the case with a smaller density contrast,
+and 0.56 E\"otv\"os, for the case with a larger density contrast.
+Hence, in both cases,
+the predicted data fit the synthetic data
+within the assumed data error level.
+Furthermore, the estimated density-contrast distributions
+\citep[see Figures 2 and 3 in the supplementary material of][]{Uieda2012b}
+are compact and present the correct dip of the targeted dipping source.
+However, by assigning a density contrast smaller than the true one, the
+estimated density-contrast distribution
+\citep[see Figure 2 in][]{Uieda2012b}
+displays a larger volume when compared to the true source.
+On the other hand, by assigning a density contrast larger than the true one,
+the estimated density-contrast distribution
+\citep[see Figure 3 in][]{Uieda2012b}
+has a smaller volume when compared to the true source.
+\\ \indent
+The third test had the purpose of assessing the sensitivity of our method
+to the wrong positioning of the seeds that define framework of the targeted
+source.
+For this purpose, we used three seeds
+(gray prisms in the inset of Figure \ref{fig:wrongseeds})
+with the correct density contrast of $1\ \mathrm{g/cm}^3$
+but with their positions defining the wrong dip of the true targeted dipping
+source.
+We set $\mu=1$ and $\delta=10^{-4}$.
+Despite the error in defining the locations of the seeds, the estimated
+density-contrast distribution
+(Figure \ref{fig:wrongseeds})
+still retains the main feature of the true targeted source.
+However, the solution is not compact and
+the standard deviation of the residual vector of the $g_{zz}$ component
+is 0.70 E\"otv\"os,
+which shows that the predicted data does not explain
+the synthetic data
+within the assumed data error level.
+\\ \indent
+In the fourth test, we assessed the sensitivity of our method to a substantial
+reduction in the number of seeds.
+Hence, we assigned a single seed
+(gray prism in the inset of Figure \ref{fig:oneseed})
+with density contrast of $1\ \mathrm{g/cm}^3$.
+The choice of positioning the seed at the top of the targeted dipping source is
+based on a hypothetical previous interpretation provided, for example, by Euler
+deconvolution.
+We performed several inversions by setting $\delta=10^{-4}$ and varying
+$\mu$ from 1 to $10^{10}$.
+The estimated density-contrast distribution
+(Figure \ref{fig:oneseed})
+is not compact and is not able to
+reconstruct the true targeted dipping source, even when $\mu$ is assigned a
+large value (e.g., $10^{10}$).
+Additionally,
+the standard deviation of the residual vector of the $g_{zz}$ component is
+2.01 E\"otv\"os, which shows that
+the synthetic data are not fitted by the predicted data
+within the assumed errors.
+\\ \indent
+The fifth test was meant to analyze the limitations of the proposed robust
+procedure to effectively ignore the interfering signal of the non-targeted
+cubic source.
+We kept the targeted dipping source as it was and changed the density-contrast
+value of the non-targeted cubic source to $1.5\ \mathrm{g/cm}^3$.
+This was done in order to simulate targeted and non-targeted sources with
+density contrasts of the same sign.
+We used the same seeds as in the first test
+(inset of Figure \ref{fig:fullseeds})
+with the correct density contrast of $1\ \mathrm{g/cm}^3$.
+These seeds correctly describe the true framework of the targeted dipping
+source.
+The inversion was performed using $\mu=1$ and $\delta=10^{-4}$.
+We found that the estimated density-contrast distribution
+(Figure \ref{fig:samesign})
+is not compact and does not retrieve the true targeted source.
+However,
+the standard deviation of
+the residual vector of the $g_{zz}$ component
+is 0.71 E\"otv\"os,
+which shows that this solution does not explain
+the synthetic data within the assumed data error level.
+\\ \indent
+Figure 4 of the supplementary material of \citet{Uieda2012b}
+shows the synthetic noise-corrupted and predicted data
+of the $g_{zz}$ component of the gravity gradient tensor
+for all tests.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Application to real data}
+
+One of the most important iron provinces in Brazil is the Quadril\'atero
+Ferr\'ifero (QF), located in the S\~ao Francisco Craton, southeastern Brazil.
+Most of the iron ore bodies in the QF are hosted in the oxided, metamorphosed
+and heterogeneously deformed Banded Iron Formation (BIF) of the Cau\^e
+Formation, the so-called itabirites.
+The itabirites are associated with the Minas Supergroup and contain iron ore
+oxide facies, such as hematites, magnetites and martites.
+We applied our method to estimate the geometry and extent of the iron ore
+deposits of the Cau\^e Formation using the data from an airborne gravity
+gradiometry survey performed in this area (color-scale maps in Figure
+\ref{fig:realdata}a-c).
+The signals associated with the iron ore bodies (targeted sources)
+are more prominent in the $g_{yy}$, $g_{yz}$, and $g_{zz}$ components of the
+measured gravity gradient tensor (elongated southwest-northeast feature in
+Figure \ref{fig:realdata}a-c).
+This data set also shows interfering signals caused by
+other sources, which will be considered as non-targeted sources in our
+interpretation.
+\\ \indent
+The inversion was performed on 4,582 measurements of each of the $g_{yy}$,
+$g_{yz}$, and $g_{zz}$ components of the gravity gradient tensor resulting in a
+total of 13,746 measurements.
+We applied our robust procedure in order to recover only the targeted sources
+(iron ore bodies) in the presence of the non-targeted sources.
+Thus, we used the $\ell_1$-norm of the residual vector (equation \ref{eq:phi})
+and provided a set of 46 seeds (black stars in Figure
+\ref{fig:realdata}) for
+the targeted iron ore bodies of the Cau\^e Formation.
+The horizontal locations of the seeds were chosen based on the peaks of the
+elongated southwest-northeast positive feature (associated with the iron ore
+bodies) in the color-scale map of the $g_{zz}$ component (Figure
+\ref{fig:realdata}c).
+The depths of the seeds were chosen based on borehole information and previous
+geologic interpretations of the area.
+We assigned a density-contrast value of $1\ \mathrm{g/cm}^3$ for the seeds
+because the data were terrain corrected using a density of
+$2.67\ \mathrm{g/cm}^3$ and the assumed density of the iron ore deposits is
+$3.67\ \mathrm{g/cm}^3$.
+The interpretative model was formed by a regular mesh cropped to the area of
+interest and consists of 164,892 prisms which follow the topography of the area
+(Figure \ref{fig:realresult}a).
+The inversion was performed using $\mu=0.1$ and $\delta = 5 \times 10^{-5}$.
+\\ \indent
+The estimated density-contrast distribution corresponding to
+the iron ore bodies of the Cau\^{e} itabirite
+is shown in red in Figure \ref{fig:realresult}.
+Cross-sections of the estimated density contrast distribution (Figure
+\ref{fig:realcross}) show
+that the estimated iron ore bodies are compact and have non-outcropping parts.
+Figure \ref{fig:realdata}d-f shows the predicted data caused by
+the estimated density-contrast distribution shown in
+Figure \ref{fig:realresult}.
+For all three components, the inversion is able to fit the elongated
+southwest-northeast feature associated with the iron ore deposits (targeted
+sources) and successfully ignore the other signals presumably produced by the
+non-targeted sources (Figure \ref{fig:realdata}).
+These results show the ability of our method to provide a compact estimate of
+the iron ore deposits.
+We emphasize that this was possible without prior information about
+the density contrasts and approximate depths of the non-targeted sources
+or without isolating the signals produced by the targeted sources.
+All these requirements would be impractical in this highly complex geological
+setting.
+Our results are in close agreement with previous interpretations by
+\citet{martinez}.
+Furthermore, when performed on a standard laptop computer with an
+Intel\textregistered ~ Core\texttrademark ~ 2 Duo P7350 2.0 GHz processor, the
+total time for the inversion was approximately 14 minutes.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discussion}
+
+The proposed inversion method
+incorporates a priori information into the
+solution through user-specified seeds.
+The positions of the seeds determine roughly where the ``skeletons'' of the
+estimated targeted sources will be.
+Whereas, the density-contrast values assigned to the seeds determine the density
+contrasts of the estimated targeted sources.
+Therefore, one must provide adequate seeds in order to obtain good results.
+In cases where the density-contrast values of the seeds are poorly assigned,
+the volumes of the estimated sources will be either greater or smaller than
+the true ones.
+However, their overall shape and mass do not appear to be affected.
+Tests on synthetic data
+(Figures \ref{fig:wrongseeds} and \ref{fig:oneseed})
+indicate that a reasonable fit of the observed data is not
+obtained if the number of seeds used or their positions are inadequate.
+Moreover, in these cases our method is not able to estimate compact sources.
+Rather, the estimated sources exhibit shapes that do not resemble geologic
+structures, such as the tentacle-like structures shown in
+Figures \ref{fig:wrongseeds} and \ref{fig:oneseed}.
+Thus, the presence of these ``tentacles'' in a solution, combined with a poor
+fit of the observed data may be used as heuristic criteria to evaluate the
+correctness of the locations of the seeds.
+In cases where the errors in the locations are small, the direction in which
+the tentacles grow may indicate the direction in which lies a better
+position for the seeds (Figure \ref{fig:wrongseeds}).
+Thus, the positions of the seeds can be manually adjusted by the user
+until an acceptable data fit is obtained and the estimated sources are
+not only compact, but resemble geologic structures.
+We emphasize that this procedure is only practical because our method is
+computationally efficient, which is due to the restricted systematic search of
+the planting algorithm and the lazy evaluation of the sensitivity matrix.
+An alternative approach to determine the locations of the seeds is to use
+interpretation methods that estimate the centers of mass of the sources
+\citep[e.g.,][]{medeiros, beiki}.
+\citet{medeiros} achieve this by inverting the source moments obtained from the
+gravity anomaly.
+On the other hand, \citet{beiki} use the eigenvectors of the gravity gradient
+tensor to estimate the coordinates of the centers of mass of the sources.
+However, we stress that if the fit of the observed data is acceptable and the
+estimated sources present geologically reasonable shapes, the hypothesis about
+the seeds must be accepted.
+Hence, the estimated solution must be accepted as a possible solution, even if
+it differs from the true one.
+\\ \indent
+Another type of a priori information required by our method is whether or not
+a given signal is due to the targeted sources.
+This information is conveyed through the horizontal locations of the seeds
+associated with the targeted sources only.
+Because of this information and the mass concentration constraint imposed by the
+regularizing function (equation \ref{eq:regul}), the estimated sources cannot
+grow too far from the seeds.
+Furthermore, the use of the $\ell_1$-norm of the residual vectors (equation
+\ref{eq:phi}) reduces the influence of the signal of the non-targeted sources.
+Nonetheless, the use of the $\ell_1$-norm alone cannot guaranteed the
+robustness of our method to the presence of non-targeted sources.
+Tests on synthetic data
+(Figures \ref{fig:synthresult} and \ref{fig:samesign})
+show that the robustness requires some form of ``barrier''
+between the targeted and non-targeted sources.
+We concluded from our tests that these barriers must be sources with a density
+contrast of opposite sign of the targeted sources.
+These barriers work as a natural obstacle for the growth of the estimated
+density-contrast distribution (Figure \ref{fig:synthresult}).
+We also stress that even in the case where the targeted and non-targeted sources
+have opposite signs, the robustness of our method may fail if the signals
+produced by these sources present a substantial overlap.
+In this case the estimated volume of the targeted source will be
+underestimated.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusions}
+
+We have presented a new method for the 3D inversion of gravity gradient data
+that uses a systematic search algorithm.
+We parametrized the Earth's subsurface as a grid of juxtaposed right rectangular
+prisms with homogeneous density contrasts.
+The estimated density-contrast distribution is then iteratively built through
+the successive accretion of new elements around user-specified prisms called
+``seeds''.
+The choice of seeds is used to incorporate into the solution prior information
+about the density-contrast values and the approximate location of the sources.
+Our method is able to retrieve multiple sources with different locations,
+geometries, and density contrasts by allowing each seed to have a different
+density contrast.
+Furthermore, we devised a robust procedure that, in some situations, recovers
+only targeted sources when in the presence of non-targeted sources that yield
+interfering signals.
+Thus, prior information about density contrasts and approximate depths of
+the non-targeted sources is not required.
+In addition, the signal of the targeted sources does not need to
+be previously isolated in order to perform to the inversion.
+In real world scenarios, both of the previously stated requirements would be
+highly impractical, or even impossible.
+\\ \indent
+The developed inversion method has low processing time and computer memory
+usage since there are no matrix multiplications or linear systems to be solved.
+Further computational efficiency is achieved by implementing a
+``lazy evaluation'' of the sensitivity matrix.
+These optimizations make feasible the inversion of the large data sets
+encountered in airborne gravity gradiometry surveys while using an
+interpretative model composed of a large number of prisms.
+Tests on synthetic data and real data from an airborne gravity gradiometry
+survey show that our method is able to recover compact bodies despite the
+presence of interfering signals produced by non-targeted sources.
+However, the developed method requires a substantial amount of a priori
+information.
+Thus, it is not suitable for interpretations on a regional scale lacking
+detailed geologic information.
+Instead, our method should be applied on localized high-resolution
+interpretations of well constrained targets.
+This makes our inversion method more suitable to be employed in later stages of
+an exploration program, when geological mappings and boreholes are available.
+Ergo, ideal geologic targets would be compact three-dimensional bodies
+with sharp boundaries, like salt domes, orebodies, and igneous intrusions.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Acknowledgments}
+
+The authors thank assistant editor Jose Carcione,
+associate editor Xiong Li,
+reviewer Gary Barnes, and three anonymous reviewers for their questions
+and suggestions that greatly improved the original manuscript.
+We thank Vanderlei C. Oliveira Junior,
+Dionisio U. Carlos,
+Irineu Figueiredo,
+Eder C. Molina, and
+Jo\~ao B. C. Silva for discussions and insightful comments.
+We acknowledge the use of plotting library matplotlib by \citet{matplotlib} and
+software Mayavi by \citet{mayavi}.
+The authors were supported in this research by
+a fellowship (VCFB) from
+Conselho Nacional de Desenvolvimento Cient\'ifico e Tecnol\'ogico (CNPq) and
+a scholarship (LU) from
+Coordena\c{c}\~ao de Aperfei\c{c}oamento de Pessoal de N\'ivel Superior (CAPES),
+Brazil.
+Additional support for the authors was provided by
+the Brazilian agencies CNPq (grant 471693/2011-1) and
+FAPERJ (grant E-26/103.175/2011).
+The authors would like to thank Vale for permission to use the gravity
+gradiometry data of the Quadril\'atero Ferr\'ifero.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\bibliographystyle{seg}
+\begin{thebibliography}{}
+\itemsep0pt
+
+\bibitem[Beiki and Pedersen, 2010]{beiki}
+Beiki, M., and L. B. Pedersen, 2010, Eigenvector analysis of gravity
+    gradient tensor to locate geologic bodies: Geophysics, {\bf 75}, no. 6,
+    I37--I49, doi:10.1190/1.3484098.
+    
+\bibitem[Camacho et al., 2000]{camacho}
+Camacho, A. G., F. G. Montesinos, and R. Vieira, 2000, Gravity inversion by
+    means of growing bodies: Geophysics, {\bf 65}, 95--101,
+    doi:10.1190/1.1444729.
+
+\bibitem[Claerbout and Muir, 1973]{claerbout}
+Claerbout, J. F., and F. Muir, 1973, Robust modeling with erratic
+    data: Geophysics, {\bf 38}, 826--844, doi: 10.1190/1.1440378.
+
+\bibitem[Cordell, 1994]{cordell}
+Cordell, L., 1994, Potential-field sounding using Euler's homogeneity equations
+    and Zidarov bubbling: Geophysics, {\bf 59}, 902--908.
+
+\bibitem[Cox et al., 2010]{cox}
+Cox, L. H., G. Wilson, and M. S. Zhdanov, 2010, 3D inversion of airborne
+    electromagnetic data using a moving footprint: Exploration Geophysics,
+    {\bf 41}, 250--259, doi: 10.1071/EG10003.
+
+\bibitem[Guillen and Menichetti, 1984]{guillen_menichetti}
+Guillen, A., and V. Menichetti, 1984, Gravity and magnetic inversion with
+    minimization of a specific functional: Geophysics, {\bf 49}, 1354--1360,
+    doi:10.1190/1.1441761.
+
+\bibitem[Henderson and Morris, 1976]{lazyeval}
+Henderson, P., and J. H. Morris, Jr., 1976, A lazy evaluator: Proceedings
+    of the 3rd ACM SIGACT-SIGPLAN symposium on Principles on programming
+    languages, ACM, 95--103, doi:10.1145/800168.811543.
+
+\bibitem[Hunter, 2007]{matplotlib}
+Hunter, J. D., 2007, Matplotlib: A 2D graphics environment: Computing in Science
+    and Engineering, {\bf 9}, 90--95, doi:10.1109/MCSE.2007.55.
+    
+\bibitem[Jorgensen and Kisabeth, 2000]{jorgensen}
+Jorgensen, G. J., and J. L. Kisabeth, 2000, Joint 3D inversion of gravity,
+    magnetic and tensor gravity fields for imaging salt formations in the
+    deepwater Gulf of Mexico: 70th Annual International Meeting, SEG, Expanded
+    Abstracts, 424--426.
+    
+\bibitem[Krahenbuhl and Li, 2009]{krahenbuhl}
+Krahenbuhl, R. A., and Y. Li, 2009, Hybrid optimization for lithologic inversion
+    and time-lapse monitoring using a binary formulation: Geophysics, {\bf 74},
+    no. 6, I55--I65, doi:10.1190/1.3242271.
+
+\bibitem[Li, 2001]{li}
+Li, Y., 2001, 3D inversion of gravity gradiometer data: 71st Annual
+    International Meeting, SEG, Expanded Abstracts, 1470--1473.
+
+\bibitem[Li and Oldenburg, 1998]{li_oldenburg98}
+Li, Y., and D. W. Oldenburg, 1998, 3-D inversion of gravity data: Geophysics,
+    {\bf 63}, 109--119, doi: 10.1190/1.1444302.
+
+\bibitem[Li and Oldenburg, 2003]{li_oldenburg03}
+\rule{1cm}{.4pt}, 2003, Fast inversion of large-scale magnetic data using
+    wavelet transforms and a logarithmic barrier method: Geophysical Journal
+    International, {\bf 152}, 251--265, doi: 10.1046/j.1365-246X.2003.01766.x.
+
+\bibitem[Martinez et al., 2010]{martinez}
+Martinez, C., Y. Li, R. Krahenbuhl, and M. Braga, 2010, 3D Inversion of airborne
+    gravity gradiometry
+    for iron ore exploration in Brazil: 80th Annual
+    International Meeting, SEG, Expanded Abstracts, 1753--1757. 
+
+\bibitem[Medeiros and Silva, 1995]{medeiros}
+Medeiros, W. E., and J. B. C. Silva, 1995, Gravity source moment inversion:
+    A versatile approach to characterize position and 3-D orientation of
+    anomalous bodies: Geophysics, {\bf 60}, 1342--1353.
+
+\bibitem[Menke, 1989]{menke}
+Menke, W., 1989, Geophysical Data Analysis: Discrete Inverse Theory, volume 45
+    of International Geophysics Series: Academic Press Inc.
+
+\bibitem[Nagihara and Hall, 2001]{nagihara}
+Nagihara, S., and S. A. Hall, 2001, Three-dimensional gravity inversion using
+    simulated annealing: Constraints on the diapiric roots of allochthonous salt
+    structures: Geophysics, {\bf 66}, 1438--1449, doi:10.1190/1.1487089.
+
+\bibitem[Nagy et al., 2000]{nagy}
+Nagy, D., G. Papp, and J. Benedek, 2000, The gravitational potential and its
+    derivatives for the prism: Journal of Geodesy, {\bf 74}, 552--560,
+    doi: 10.1007/s001900000116. 
+
+\bibitem[Pedersen and Rasmussen, 1990]{pedersen}
+Pedersen, L. B., and T. M. Rasmussen, 1990, The gradient tensor of  potential
+    field anomalies: Some implications on data collection and data processing of
+    maps: Geophysics, {\bf 55}, 1558--1566, doi:10.1190/1.1442807.
+
+\bibitem[Pilkington, 1997]{pilkington}
+Pilkington, M., 1997, 3-D magnetic imaging using conjugate gradients:
+    Geophysics, {\bf 62}, 1132--1142, doi: 10.1190/1.1444214.
+
+\bibitem[Portniaguine and Zhdanov, 1999]{portniaguine99}
+Portniaguine, O., and M. S. Zhdanov,  1999, Focusing geophysical inversion
+    images: Geophysics, {\bf 64}, 874--887, doi: 10.1190/1.1444596.
+
+\bibitem[Portniaguine and Zhdanov, 2002]{portniaguine02}
+\rule{1cm}{.4pt}, 2002, 3-D magnetic inversion with data compression and image focusing:
+    Geophysics, {\bf 67}, 1532--1541, doi: 10.1190/1.1512749.
+
+\bibitem[Ramachandran and Varoquaux, 2011]{mayavi}
+Ramachandran, P., and G. Varoquaux, 2011, Mayavi: 3D visualization of scientific
+    data: Computing in Science and Engineering, {\bf 13}, 40–50,
+    doi:10.1109/MCSE.2011.35
+    
+\bibitem[Ren\'e, 1986]{rene}
+Ren\'e, R. M., 1986, Gravity inversion using open, reject, and
+    ``shape-of-anomaly'' fill criteria: Geophysics, {\bf 51}, 988--994,
+    doi:10.1190/1.1442157.
+
+\bibitem[Routh et al., 2001]{routh}
+Routh, P. S., G. J. Jorgensen, and J. L. Kisabeth, 2001, Base of the salt
+    imaging using gravity and tensor gravity data: 71st Annual International
+    Meeting, SEG, Expanded Abstracts, 1482--1484.
+
+\bibitem[Silva Dias et al., 2007]{silvadias07}
+Silva Dias, F. J. S., V. C. F. Barbosa, and J. B. C. Silva, 2007, 2D gravity
+    inversion of a complex interface in the presence of interfering sources:
+    Geophysics, {\bf 72}, no. 2, I13--I22, doi: 10.1190/1.2424545.
+
+\bibitem[Silva Dias et al., 2009]{silvadias09}
+\rule{1cm}{.4pt}, 2009, 3D gravity inversion through an adaptive-learning procedure:
+    Geophysics, {\bf 74}, no. 3, I9--I21, doi:10.1190/1.3092775.
+
+\bibitem[Silva Dias et al., 2011]{silvadias11}
+\rule{1cm}{.4pt}, 2011, Adaptive learning 3D gravity inversion for salt-body imaging:
+    Geophysics, {\bf 76}, no. 3, I49--I57, doi:10.1190/1.3555078.
+
+\bibitem[Silva and Barbosa, 2006]{silva_barbosa06}
+Silva, J. B. C., and V. C. F. Barbosa, 2006, Interactive gravity inversion:
+    Geophysics, {\bf 71}, no. 1, J1--J9, doi:10.1190/1.2168010.
+
+\bibitem[Silva and Cutrim, 1989]{silva_cutrim}
+Silva, J. B. C., and A. O. Cutrim, 1989, A Robust Maximum Likelihood Method for
+    Gravity and Magnetic Interpretation: Geoexploration, {\bf 26}, 1--31,
+    doi: 10.1016/0016-7142(89)90017-3. 
+
+\bibitem[Silva and Holmann, 1983]{silva_holmann}
+Silva, J. B. C., and G. W. Holmann, 1983, Nonlinear magnetic inversion using a
+    random search method: Geophysics, {\bf 48}, 1645--1658.
+
+\bibitem[Tarantola, 2005]{tarantola}
+Tarantola, A., 2005, Inverse problem theory and methods for model parameter
+    estimation: Society for Industrial and Applied Mathematics.
+    
+\bibitem[Uieda and Barbosa, 2012a]{Uieda2012}
+Uieda, L., and V. C. F. Barbosa, 2012a, {Animation of growth iterations during 3D
+    gravity gradient inversion by planting anomalous densities}: Figshare,
+    http://hdl.handle.net/10779/2f26602b43f73723987b8d04946bfa41,
+    accessed 25 April 2012.
+    
+\bibitem[Uieda and Barbosa, 2012b]{Uieda2012b}
+\rule{1cm}{.4pt}, 2012b, {Supplementary material to
+    ``Robust 3D gravity gradient inversion by planting anomalous densities''
+    by Leonardo Uieda and Val\'eria C. F. Barbosa}: Figshare,
+    http://hdl.handle.net/10779/cbfb817e4cc9ac3cf54bee7c649de1d3,
+    accessed 25 April 2012.
+
+\bibitem[Vasco, 1989]{vasco}
+Vasco, D. W., 1989, Resolution and variance operators of gravity and gravity
+    gradiometry: Geophysics, {\bf 54}, 889–899, doi: 10.1190/1.1442717.
+
+\bibitem[Wilson et al., 2011]{wilson}
+Wilson, G. A., M. Cuma, and M. S. Zhdanov, 2011, Large-scale 3D Inversion of
+    Airborne Potential Field Data: 73rd EAGE Conference \& Exhibition
+    incorporating SPE EUROPEC 2011, Expanded Abstracts, K047.
+
+\bibitem[Zhdanov et al., 2004]{zhdanov04}
+Zhdanov, M. S., R. G. Ellis, and S. Mukherjee, 2004, Regularized focusing
+    inversion of 3-D gravity tensor data: Geophysics, {\bf 69},
+    925--937, doi: 10.1190/1.1778236.
+
+\bibitem[Zhdanov et al., 2010a]{zhdanov10a}
+Zhdanov, M. S., A. Green, A. Gribenko, and M. Cuma, 2010a, Large-scale
+    three-dimensional inversion of Earthscope MT data using the integral
+    equation method: Physics of the Earth, {\bf 8}, 27--35,
+    doi: 10.1134/S1069351310080045. 
+
+\bibitem[Zhdanov et al., 2010b]{zhdanov10b}
+Zhdanov, M. S., X. Liu, and G. A. Wilson, 2010b, Rapid imaging of gravity
+    gradiometry data using 2D potential field migration: 80th Annual
+    International Meeting, SEG, Expanded Abstracts, 1132--1136.
+    
+\bibitem[Zidarov and Zhelev, 1970]{zidarov}
+Zidarov, D., and Z. Zhelev, 1970, On obtaining a family of bodies with identical
+    exterior fields -- Method of bubbling: Geophysical Prospecting, {\bf 18},
+    14--33.
+\end{thebibliography}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Figure Captions}
+
+
+\begin{enumerate}
+
+\item \label{fig:interpmodel}
+    Schematic representation of the interpretative model
+    consisting of a grid of $M$ juxtaposed 3D right-rectangular prisms.
+    The interpretative model used to
+    parametrize the anomalous density distribution
+    is shown in gray.
+    The observed $g_{yz}$ and $g_{zz}$ components of
+    the gravity gradient tensor produced by
+    the anomalous density distribution
+    are shown in gray-scale contour maps.
+    $\Delta x$, $\Delta y$, and $\Delta z$ are
+    the lengths of the interpretative model
+    in the $x$-, $y$-, and $z$-dimensions, respectively.
+
+\item \label{fig:sketch}
+    2D sketch of three stages of the planting algorithm.
+    Black dots represent the observed data and the red line represents the
+    predicted data produced by the current estimate.
+    The light gray grid of prisms represents the interpretative model.
+    (a) Initial state with the user-specified seeds included in the estimate
+    with their corresponding density contrasts and all other parameters set to
+    zero.
+    (b) End of the first growth iteration where two accretions took place,
+    one for each seed.
+    The list of neighboring prisms of each seed and the predicted data are
+    updated. (c) Final estimate at the end of the algorithm.
+    The growth process stops when the predicted data fits the observed data.    
+    
+\item \label{fig:robust}
+    2D sketch of the robust procedure.
+    Black dots represent the observed data produced by (a) the true sources
+    with different density contrasts $\rho_1$, $\rho_2$, and $\rho_3$
+    (black, gray, and white polygons, respectively).
+    The gray and white sources are considered
+    non-targeted sources. The white source has a density contrast with the
+    opposite sign of the black and gray sources.
+    (b) Inversion result when given a seed only for the targeted source
+    (black polygon) and using the $\ell_1$-norm of the residual vector
+    (equation \ref{eq:phi}).
+    The dashed line in b represents the data predicted by the inversion result.
+    Large residuals over the non-targeted sources are automatically
+    allowed by the inversion.
+    The estimated density-contrast distribution (black prisms) recovers only
+    the shape of the targeted source (black outline).
+
+\item \label{fig:synthdata}
+    Test with synthetic data produced by multiple
+    targeted and non-targeted sources.
+    (a) Synthetic noise-corrupted data (color-scale map) and data
+    predicted by the inversion result (black contour lines) of the
+    $g_{zz}$ component of the gravity
+    gradient tensor.
+    The synthetic data were produced by the 11 sources shown in Figure
+    \ref{fig:synthresult}a.
+    The predicted data is produced by the inversion result shown in Figure
+    \ref{fig:synthresult}c.
+    (b) The $g_{zz}$ component of the gravity gradient tensor
+    produced only by the targeted sources
+    (color-scale map) and
+    the same data predicted by the inversion
+    result in Figure \ref{fig:synthresult}c (black contour lines).
+
+\item \label{fig:synthresult}
+    Test with synthetic data produced by multiple
+    targeted and non-targeted sources. (a) Perspective view of the synthetic
+    model used to generate the synthetic data. Only sources with density
+    contrast $0.6\ \mathrm{g/cm}^3$ (yellow) are outcropping.
+    The sources with density contrast $1.2\ \mathrm{g/cm}^3$ (red) were
+    considered as the targets of the interpretation.
+    (b) Seeds used in the inversion and outline of the true targeted sources.
+    (c) Inversion result obtained by using the $\ell_1$-norm of the residual
+    vector (equation \ref{eq:phi}).
+    Prisms of the interpretative model with zero density contrast are not
+    shown. Black lines represent the outline of the true targeted sources.
+
+\item \label{fig:fullseeds}
+    Sensitivity analysis.
+    Test using ideal seed locations and the correct density contrast of
+    $1\ \mathrm{g/cm}^3$.
+    The outline of the true sources is shown in solid black lines.
+    The inversion result is shown as gray prisms.
+    Prisms with zero density contrast are not shown.
+    The inset shows the three seeds used in the inversion (gray prisms).
+    The location of the seeds was chosen
+    in order to outline the correct dip of
+    the large dipping source (targeted source).
+    
+\item \label{fig:wrongseeds}
+    Analysis of the sensitivity to uncertainties in the location of the seeds.
+    Test using three seeds with the correct density contrast of
+    $1\ \mathrm{g/cm}^3$ but with incorrect dip.
+    The outline of the true sources is shown in solid black lines.
+    The inversion result is shown as gray prisms.
+    Prisms with zero density contrast are not shown.
+    The inset shows the three seeds used in the inversion (gray prisms),
+    which had the incorrect dip of
+    the large dipping source (targeted source).
+
+\item \label{fig:oneseed}
+    Analysis of the sensitivity to the reduction of the number of seeds.
+    Test using only a single seed and the correct density contrast of
+    $1\ \mathrm{g/cm}^3$.
+    The outline of the true sources is shown in solid black lines.
+    The inversion result is shown as gray prisms.
+    Prisms with zero density contrast are not shown.
+    The inset shows the single seed used in the inversion (gray prism),
+    which was located at the top of
+    the large dipping source (targeted source).
+    
+\item \label{fig:samesign}
+    Analysis of the limitations of the robust procedure.
+    In this test, the smaller cubic source (non-targeted source) has
+    a density contrast of $1.5\ \mathrm{g/cm}^3$, which has the same sign as the
+    density contrast of the larger dipping source (targeted source).
+    Test using three seeds in ideal locations
+    (same as used in Figure \ref{fig:fullseeds})
+    with the correct density contrast of
+    $1\ \mathrm{g/cm}^3$.
+    The inversion result is shown as gray prisms.
+    Prisms with zero density contrast are not shown.
+    The outline of the true sources is shown in solid black lines.
+    The inset shows the three seeds used in the inversion (gray prisms).
+
+\item \label{fig:realdata}
+    Application to real data from an airborne gravity
+    gradiometry survey over a region of the Quadril\'atero Ferr\'ifero,
+    southeastern Brazil. The observed (a-c) and predicted (d-f) $g_{yy}$,
+    $g_{yz}$, and $g_{zz}$ components of the gravity gradient tensor.
+    The latter were produced by the estimated density-contrast distribution
+    shown in Figure \ref{fig:realresult}.
+    Black starts represent the horizontal coordinates of the seeds used in the
+    inversion.
+
+\item \label{fig:realresult} 
+    Results from the application to real data from the
+    Quadril\'atero Ferr\'ifero, southeastern Brazil.
+    Dashed lines show the location of the cross-sections in Figure
+    \ref{fig:realcross}.
+    (a-c)
+    Perspective views of the estimated density-contrast distribution,
+    where prisms with zero density contrast are not shown
+    or shown in gray and
+    prisms with density contrast $1\ \mathrm{g/cm}^3$,
+    corresponding to the iron orebody of the Cau\^{e} itabirite,
+    are shown in solid or transparent red.
+    The seeds used in the inversion are shown as black prisms.
+
+\item \label{fig:realcross}
+    Results from the application to real data from the
+    Quadril\'atero Ferr\'ifero, southeastern Brazil.
+    Cross-sections of the inversion result shown in Figure
+    \ref{fig:realresult}
+    at horizontal coordinate $x$ equal to (a) 1.00 km and (b) 5.55 km.
+    Prisms with zero density contrast are shown in gray and
+    prisms with density contrast $1\ \mathrm{g/cm}^3$,
+    corresponding to the iron orebody of the Cau\^{e} itabirite,
+    are shown in red. 
+\end{enumerate}
+
+\end{document}

@@ -1,0 +1,23 @@
+Fatiando a Terra:
+  version: 0.0.1
+  date: Mon Apr  9 15:25:13 2012
+  changeset: 3edcc61b5058+ tip
+
+Using data file: data-pos-neg.txt
+Using parameter file: params-pos-neg-full-over.py
+Generating 3D right rectangular prism mesh:
+  bounds = (x1, x2, y1, y2, z1, z2) = [0, 1000, 0, 1000, 0, 1000]
+  shape = (nz, ny, nx) = (30, 30, 30)
+  number of prisms = 27000
+  prism dimensions = (dz, dy, dx) = (33.333333333333336, 33.333333333333336, 33.333333333333336)
+Sowing seeds in the mesh:
+  found 3 seeds
+  time: 0h 0m 0.00000s
+Final goal function value: 0.99041
+Total time for inversion: 0h 0m 23.66000s
+Total number of accretions: 415
+Average time per accretion: 0h 0m 0.05701s
+Calculating standard deviations:
+  0.5378 0.4986 0.5181 0.5045 0.5206 0.5598
+Goal is actually misfit.
+Regularizer: 33.794

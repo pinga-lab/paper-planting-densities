@@ -1,0 +1,20 @@
+Fatiando a Terra:
+  version: 0.0.1
+  date: Tue Aug 30 23:27:35 2011
+  version control info:
+    changeset:   179:31e0627cf7c5
+    user:        Leonardo Uieda <leouieda@gmail.com>
+    date:        Mon Jul 11 15:00:07 2011 -0300
+
+Generating synthetic gzz data:
+  grid type: regular
+  data points = 2500
+Generating synthetic gyz data:
+  grid type: regular
+  data points = 2500
+Building prism mesh:
+  Discretization: nx=30 X ny=30 X nz=30 = 27000 prisms
+  Cell dimensions: dx=100 X dy=100 X dz=100
+Setting seeds in mesh:
+  seed: {'cell': {'x2': 1600.0, 'x1': 1500.0, 'value': 1000, 'y1': 1500.0, 'y2': 1600.0, 'z1': 1500.0, 'z2': 1600.0}, 'index': 13965, 'neighbors': [], 'density': 1000}
+Plotting
